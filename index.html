@@ -399,7 +399,7 @@ window.addStudent = async function() {
   loadStudents(); alert('✓ Student add ho gaya!');
 }
 
-async function loadStudents() {
+window.loadStudents = async function() {
   const filterClass = document.getElementById('filter-class-students')?.value;
   let snap;
   if(filterClass) { const q = query(collection(db, 'students'), where('classId', '==', filterClass)); snap = await getDocs(q); }
