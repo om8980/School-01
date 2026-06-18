@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>School - Result System</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; min-height: 100vh; }
+    nav { background: #1e3a5f; color: white; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; }
+    nav h1 { font-size: 20px; font-weight: 600; }
+    #nav-role { font-size: 13px; opacity: 0.8; }
+    #logout-btn { background: rgba(255,255,255,0.15); border: none; color: white; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; display: none; }
+    .page { display: none; padding: 24px; max-width: 900px; margin: 0 auto; }
+    .page.active { display: block; }
+    .card { background: white; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 20px; }
+    .card-title { font-size: 17px; font-weight: 600; color: #1e3a5f; margin-bottom: 18px; }
+    #login-page { display: flex; align-items: center; justify-content: center; min-height: 80vh; }
+    .login-box { background: white; border-radius: 16px; padding: 36px; width: 100%; max-width: 400px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+    .login-box h2 { font-size: 22px; color: #1e3a5f; margin-bottom: 6px; }
+    .login-box p { font-size: 13px; color: #666; margin-bottom: 24px; }
+    .school-logo { text-align: center; font-size: 48px; margin-bottom: 16px; }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: 13px; color: #555; margin-bottom: 5px; font-weight: 500; }
+    .form-group input, .form-group select { width: 100%; padding: 10px 12px; border: 1.5px solid #dde3ea; border-radius: 8px; font-size: 14px; outline: none; transition: border-color .2s; background: #fff; }
+    .form-group input:focus, .form-group select:focus { border-color: #1e3a5f; }
+    .btn { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-size: 14px; font-weight: 500; transition: opacity .2s; }
+    .btn-primary { background: #1e3a5f; color: white; width: 100%; padding: 12px; }
+    .btn-primary:hover { opacity: 0.88; }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-success { background: #1a7f5a; color: white; }
+    .btn-sm { padding: 6px 14px; font-size: 13px; }
+    .tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+    .tab { padding: 8px 18px; border-radius: 20px; border: 1.5px solid #dde3ea; background: white; cursor: pointer; font-size: 13px; font-weight: 500; color: #555; transition: all .2s; }
+    .tab.active { background: #1e3a5f; color: white; border-color: #1e3a5f; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th { background: #f5f7fa; padding: 10px 12px; text-align: left; font-weight: 600; color: #444; border-bottom: 2px solid #eee; }
+    td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; color: #333; }
+    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px; }
+    .stat-card { background: white; border-radius: 10px; padding: 16px; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,0.07); }
+    .stat-value { font-size: 26px; font-weight: 700; color: #1e3a5f; }
+    .stat-label { font-size: 12px; color: #888; margin-top: 3px; }
+    .marks-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .subject-mark { display: flex; align-items: center; gap: 10px; padding: 10px; background: #f8f9fc; border-radius: 8px; }
+    .subject-mark label { flex: 1; font-size: 13px; font-weight: 500; color: #333; }
+    .subject-mark input { width: 80px; padding: 6px 10px; border: 1.5px solid #dde3ea; border-radius: 6px; font-size: 14px; text-align: center; outline: none; }
+    .result-header { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
+    .result-avatar { width: 56px; height: 56px; border-radius: 50%; background: #1e3a5f; color: white; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 600; }
+    .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .bar-label { width: 120px; font-size: 13px; color: #444; flex-shrink: 0; }
+    .bar-bg { flex: 1; height: 10px; background: #eee; border-radius: 5px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 5px; transition: width 1s ease; }
+    .bar-score { width: 45px; font-size: 13px; font-weight: 600; text-align: right; }
+    .ai-box { background: linear-gradient(135deg, #f0f4ff, #e8f0fe); border-radius: 12px; padding: 18px; border-left: 4px solid #1e3a5f; }
+    .suggestion-item { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid rgba(0,0,0,0.06); }
+    .suggestion-item:last-child { border-bottom: none; }
+    .sug-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; background: #1e3a5f; }
+    .sug-text { font-size: 13px; color: #333; line-height: 1.6; }
+    .alert { padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 14px; }
+    .alert-error { background: #fff0f0; color: #c0392b; border: 1px solid #f5c6cb; }
+    .grade-box { display: inline-block; padding: 4px 12px; border-radius: 8px; font-weight: 700; font-size: 13px; }
+    @media (max-width: 600px) {
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+      .marks-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div>
+    <h1>🏫 School</h1>
+    <span id="nav-role"></span>
+  </div>
+  <button id="logout-btn" onclick="logout()">Logout</button>
+</nav>
+
+<div id="login-page" class="page active">
+  <div class="login-box">
+    <div class="school-logo">🏫</div>
+    <h2>Result System</h2>
+    <p>Teacher ya Admin login karein</p>
+    <div id="login-error" class="alert alert-error" style="display:none"></div>
+    <div class="form-group"><label>Email</label><input type="email" id="login-email" placeholder="aapki@email.com" /></div>
+    <div class="form-group"><label>Password</label><input type="password" id="login-password" placeholder="Password" onkeydown="if(event.key==='Enter')doLogin()" /></div>
+    <button class="btn btn-primary" id="login-btn" onclick="doLogin()">Login Karein</button>
+  </div>
+</div>
+
+<div id="admin-page" class="page">
+  <div class="tabs">
+    <div class="tab active" onclick="adminTab('classes')">Classes</div>
+    <div class="tab" onclick="adminTab('teachers')">Teachers</div>
+    <div class="tab" onclick="adminTab('students')">Students</div>
+    <div class="tab" onclick="adminTab('results')">Sab Results</div>
+  </div>
+  <div id="tab-classes">
+    <div class="card">
+      <div class="card-title">Nayi Class Add Karo</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <div class="form-group" style="flex:1;min-width:140px;margin:0"><input type="text" id="new-class-name" placeholder="jaise: Class 8" /></div>
+        <div class="form-group" style="flex:1;min-width:100px;margin:0"><input type="text" id="new-class-section" placeholder="Section: A" /></div>
+        <button class="btn btn-success btn-sm" onclick="addClass()">+ Add Class</button>
+      </div>
+    </div>
+    <div class="card"><div class="card-title">Classes List</div><div id="classes-list"></div></div>
+    <div class="card" id="subjects-card" style="display:none">
+      <div class="card-title" id="subjects-title">Subjects</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+        <div class="form-group" style="flex:1;min-width:140px;margin:0"><input type="text" id="new-subject-name" placeholder="Subject naam" /></div>
+        <div class="form-group" style="width:100px;margin:0"><input type="number" id="new-subject-max" placeholder="Max" value="100" /></div>
+        <button class="btn btn-success btn-sm" onclick="addSubject()">+ Add</button>
+      </div>
+      <div id="subjects-list"></div>
+    </div>
+  </div>
+  <div id="tab-teachers" style="display:none">
+    <div class="card">
+      <div class="card-title">Naye Teacher Add Karo</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group" style="margin:0"><label>Naam</label><input type="text" id="t-name" placeholder="Teacher ka naam" /></div>
+        <div class="form-group" style="margin:0"><label>Email</label><input type="email" id="t-email" placeholder="email@gmail.com" /></div>
+        <div class="form-group" style="margin:0"><label>Password</label><input type="password" id="t-pass" placeholder="Password" /></div>
+        <div class="form-group" style="margin:0"><label>Class</label><select id="t-class"><option value="">Class chunein</option></select></div>
+      </div>
+      <button class="btn btn-success btn-sm" style="margin-top:12px" onclick="addTeacher()">+ Teacher Add Karo</button>
+      <div id="teacher-msg" style="margin-top:8px;font-size:13px"></div>
+    </div>
+    <div class="card"><div class="card-title">Teachers List</div><div id="teachers-list"></div></div>
+  </div>
+  <div id="tab-students" style="display:none">
+    <div class="card">
+      <div class="card-title">Naya Student Add Karo</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+        <div class="form-group" style="margin:0"><label>Naam</label><input type="text" id="s-name" placeholder="Student ka naam" /></div>
+        <div class="form-group" style="margin:0"><label>Roll No.</label><input type="text" id="s-roll" placeholder="Roll number" /></div>
+        <div class="form-group" style="margin:0"><label>Class</label><select id="s-class"><option value="">Class chunein</option></select></div>
+      </div>
+      <button class="btn btn-success btn-sm" style="margin-top:12px" onclick="addStudent()">+ Student Add Karo</button>
+    </div>
+    <div class="card">
+      <div class="card-title">Students List</div>
+      <select id="filter-class-students" onchange="loadStudents()" style="margin-bottom:12px;padding:8px;border-radius:6px;border:1px solid #dde3ea;width:200px"><option value="">Sab Classes</option></select>
+      <div id="students-list"></div>
+    </div>
+  </div>
+  <div id="tab-results" style="display:none">
+    <div class="card">
+      <div class="card-title">Class wise Results</div>
+      <select id="admin-result-class" onchange="loadClassResults()" style="margin-bottom:12px;padding:8px;border-radius:6px;border:1px solid #dde3ea;width:200px"><option value="">Class chunein</option></select>
+      <div id="class-results-list"></div>
+    </div>
+  </div>
+</div>
+
+<div id="teacher-page" class="page">
+  <div class="tabs">
+    <div class="tab active" onclick="teacherTab('entry')">Marks Entry</div>
+    <div class="tab" onclick="teacherTab('results')">Results Dekho</div>
+  </div>
+  <div id="ttab-entry">
+    <div class="card">
+      <div class="card-title">Marks Darj Karein</div>
+      <div class="form-group"><label>Student</label><select id="teacher-student" onchange="loadStudentSubjects()"><option value="">Student chunein</option></select></div>
+      <div class="form-group"><label>Exam Type</label>
+        <select id="exam-type">
+          <option value="Final">Final Exam</option>
+          <option value="Mid-Term">Mid-Term</option>
+          <option value="Unit Test">Unit Test</option>
+        </select>
+      </div>
+      <div id="marks-entry-area"></div>
+      <button class="btn btn-success" id="save-marks-btn" style="display:none;margin-top:16px" onclick="saveMarks()">✓ Marks Save Karo</button>
+      <div id="marks-msg" style="margin-top:8px;font-size:13px"></div>
+    </div>
+  </div>
+  <div id="ttab-results" style="display:none">
+    <div class="card"><div class="card-title">Apni Class ke Results</div><div id="teacher-results-list"></div></div>
+  </div>
+</div>
+
+<div id="result-page" class="page">
+  <button onclick="goBack()" style="background:none;border:none;cursor:pointer;color:#1e3a5f;font-size:14px;margin-bottom:16px">← Wapas jaao</button>
+  <div class="card">
+    <div class="result-header">
+      <div class="result-avatar" id="res-avatar">R</div>
+      <div>
+        <div style="font-size:20px;font-weight:600;color:#1e3a5f" id="res-name"></div>
+        <div style="font-size:13px;color:#888" id="res-meta">Result 2024-25</div>
+      </div>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-value" id="res-total">—</div><div class="stat-label">Total Marks</div></div>
+      <div class="stat-card"><div class="stat-value" id="res-percent">—</div><div class="stat-label">Percentage</div></div>
+      <div class="stat-card"><div class="stat-value" id="res-grade" style="font-size:36px">—</div><div class="stat-label">Grade</div></div>
+    </div>
+    <div id="res-bars"></div>
+  </div>
+  <div class="card"><div class="card-title">Performance Chart</div><canvas id="res-chart" height="200"></canvas></div>
+  <div class="card">
+    <div style="font-size:13px;font-weight:600;color:#1e3a5f;margin-bottom:10px">🤖 AI Suggestions</div>
+    <div id="res-ai" class="ai-box">Suggestions load ho rahi hain...</div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getAuth, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getFirestore, collection, addDoc, getDocs, doc, setDoc, getDoc, query, where } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBWcQTWUzAJgWfxgq79L0x6gvxmuA7ifW4",
+  authDomain: "school-01-f90a6.firebaseapp.com",
+  projectId: "school-01-f90a6",
+  storageBucket: "school-01-f90a6.firebasestorage.app",
+  messagingSenderId: "705868057110",
+  appId: "1:705868057110:web:8964ffe514f3d625c60337",
+  measurementId: "G-00XFEF8J81"
+};
+const ADMIN_EMAIL = "omvaniya228@gmail.com";
+// NOTE: Gemini key yahan se hata di gayi hai. Ab yeh sirf server (api/generate-suggestions.js) ke
+// environment variable me rahegi, browser ke code me kabhi nahi aayegi.
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+let currentUser=null, currentRole=null, currentTeacherClass=null, selectedClassId=null, chartInstance=null, backPage='admin-page';
+
+// ===================== GRADE FUNCTION (FIX 3) =====================
+function getGrade(pct) {
+  if(pct >= 90) return { grade: 'A+', color: '#1a7f5a', bg: '#e6f9f2' };
+  if(pct >= 80) return { grade: 'A',  color: '#1a7f5a', bg: '#e6f9f2' };
+  if(pct >= 70) return { grade: 'B+', color: '#2471a3', bg: '#eaf4fb' };
+  if(pct >= 60) return { grade: 'B',  color: '#2471a3', bg: '#eaf4fb' };
+  if(pct >= 50) return { grade: 'C+', color: '#d68910', bg: '#fef9e7' };
+  if(pct >= 40) return { grade: 'C',  color: '#d68910', bg: '#fef9e7' };
+  if(pct >= 33) return { grade: 'D',  color: '#e67e22', bg: '#fef5e4' };
+  return { grade: 'F', color: '#c0392b', bg: '#fff0f0' };
+}
+
+// ===================== AUTH =====================
+window.doLogin = async function() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  const btn = document.getElementById('login-btn');
+  errEl.style.display = 'none';
+  btn.disabled = true; btn.textContent = 'Login ho raha hai...';
+  try {
+    const cred = await signInWithEmailAndPassword(auth, email, pass);
+    currentUser = cred.user;
+    btn.disabled = false; btn.textContent = 'Login Karein';
+    await detectRole();
+  } catch(e) {
+    errEl.textContent = 'Email ya password galat hai!';
+    errEl.style.display = 'block';
+    btn.disabled = false; btn.textContent = 'Login Karein';
+  }
+}
+
+async function detectRole() {
+  if(currentUser.email === ADMIN_EMAIL) {
+    currentRole = 'admin';
+    document.getElementById('nav-role').textContent = 'Admin';
+    document.getElementById('logout-btn').style.display = 'block';
+    showPage('admin-page');
+    await loadAdminData();
+  } else {
+    const q = query(collection(db, 'teachers'), where('email', '==', currentUser.email));
+    const snap = await getDocs(q);
+    if(!snap.empty) {
+      const data = snap.docs[0].data();
+      currentRole = 'teacher';
+      currentTeacherClass = data.classId;
+      document.getElementById('nav-role').textContent = 'Teacher: ' + data.name;
+      document.getElementById('logout-btn').style.display = 'block';
+      showPage('teacher-page');
+      await loadTeacherData();
+    } else {
+      document.getElementById('login-error').textContent = 'Aap teacher list mein nahi hain!';
+      document.getElementById('login-error').style.display = 'block';
+      await signOut(auth);
+    }
+  }
+}
+
+window.logout = async function() {
+  await signOut(auth);
+  currentUser = null; currentRole = null;
+  showPage('login-page');
+  document.getElementById('logout-btn').style.display = 'none';
+  document.getElementById('nav-role').textContent = '';
+}
+
+function showPage(id) { document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+
+window.adminTab = function(name) {
+  ['classes','teachers','students','results'].forEach(t => document.getElementById('tab-'+t).style.display = t===name?'block':'none');
+  document.querySelectorAll('#admin-page .tab').forEach((t,i) => t.classList.toggle('active', ['classes','teachers','students','results'][i]===name));
+  if(name==='teachers') loadTeachersList();
+  if(name==='students') loadStudents();
+  if(name==='results') populateClassDropdowns();
+}
+
+window.teacherTab = function(name) {
+  document.getElementById('ttab-entry').style.display = name==='entry'?'block':'none';
+  document.getElementById('ttab-results').style.display = name==='results'?'block':'none';
+  document.querySelectorAll('#teacher-page .tab').forEach((t,i) => t.classList.toggle('active', ['entry','results'][i]===name));
+  if(name==='results') loadTeacherResults();
+}
+
+window.goBack = function() { showPage(backPage); }
+
+// ===================== ADMIN =====================
+async function loadAdminData() { await loadClassesList(); await populateClassDropdowns(); }
+
+async function loadClassesList() {
+  const snap = await getDocs(collection(db, 'classes'));
+  const el = document.getElementById('classes-list');
+  if(snap.empty) { el.innerHTML = '<p style="color:#888;font-size:13px">Koi class nahi hai abhi.</p>'; return; }
+  el.innerHTML = '<table><thead><tr><th>Class</th><th>Section</th><th>Subjects</th></tr></thead><tbody>' +
+    snap.docs.map(d => `<tr><td>${d.data().name}</td><td>${d.data().section||'—'}</td><td><button class="btn btn-sm" style="background:#e8f0fe;color:#1e3a5f;border:none;cursor:pointer" onclick="openSubjects('${d.id}','${d.data().name} ${d.data().section||''}')">Manage</button></td></tr>`).join('') + '</tbody></table>';
+}
+
+window.addClass = async function() {
+  const name = document.getElementById('new-class-name').value.trim();
+  const section = document.getElementById('new-class-section').value.trim();
+  if(!name) return alert('Class naam daalo!');
+  await addDoc(collection(db, 'classes'), { name, section, createdAt: new Date() });
+  document.getElementById('new-class-name').value = ''; document.getElementById('new-class-section').value = '';
+  await loadClassesList(); await populateClassDropdowns();
+  alert('✓ Class add ho gayi!');
+}
+
+window.openSubjects = function(classId, className) {
+  selectedClassId = classId;
+  document.getElementById('subjects-title').textContent = className.trim() + ' — Subjects';
+  document.getElementById('subjects-card').style.display = 'block';
+  loadSubjectsList();
+}
+
+async function loadSubjectsList() {
+  const q = query(collection(db, 'subjects'), where('classId', '==', selectedClassId));
+  const snap = await getDocs(q);
+  const el = document.getElementById('subjects-list');
+  if(snap.empty) { el.innerHTML = '<p style="color:#888;font-size:13px">Koi subject nahi abhi.</p>'; return; }
+  el.innerHTML = '<table><thead><tr><th>Subject</th><th>Max Marks</th></tr></thead><tbody>' +
+    snap.docs.map(d => `<tr><td>${d.data().name}</td><td>${d.data().maxMarks}</td></tr>`).join('') + '</tbody></table>';
+}
+
+window.addSubject = async function() {
+  if(!selectedClassId) return alert('Pehle class chunein!');
+  const name = document.getElementById('new-subject-name').value.trim();
+  const maxMarks = parseInt(document.getElementById('new-subject-max').value) || 100;
+  if(!name) return alert('Subject naam daalo!');
+  await addDoc(collection(db, 'subjects'), { classId: selectedClassId, name, maxMarks });
+  document.getElementById('new-subject-name').value = '';
+  loadSubjectsList();
+}
+
+window.addTeacher = async function() {
+  const name = document.getElementById('t-name').value.trim();
+  const email = document.getElementById('t-email').value.trim();
+  const pass = document.getElementById('t-pass').value;
+  const classId = document.getElementById('t-class').value;
+  if(!name||!email||!pass) return alert('Sab fields bharein!');
+  const msg = document.getElementById('teacher-msg');
+  msg.textContent = 'Teacher add ho raha hai...'; msg.style.color = '#555';
+  try {
+    await createUserWithEmailAndPassword(auth, email, pass);
+    await signInWithEmailAndPassword(auth, ADMIN_EMAIL, document.getElementById('login-password').value);
+  } catch(e) {}
+  await addDoc(collection(db, 'teachers'), { name, email, classId: classId||null });
+  msg.textContent = '✓ Teacher add ho gaya!'; msg.style.color = 'green';
+  document.getElementById('t-name').value = ''; document.getElementById('t-email').value = ''; document.getElementById('t-pass').value = '';
+  loadTeachersList();
+}
+
+async function loadTeachersList() {
+  const snap = await getDocs(collection(db, 'teachers'));
+  const el = document.getElementById('teachers-list');
+  if(snap.empty) { el.innerHTML = '<p style="color:#888;font-size:13px">Koi teacher nahi.</p>'; return; }
+  const classes = {};
+  const cs = await getDocs(collection(db, 'classes'));
+  cs.docs.forEach(d => classes[d.id] = d.data().name + ' ' + (d.data().section||''));
+  el.innerHTML = '<table><thead><tr><th>Naam</th><th>Email</th><th>Class</th></tr></thead><tbody>' +
+    snap.docs.map(d => `<tr><td>${d.data().name}</td><td>${d.data().email}</td><td>${d.data().classId ? classes[d.data().classId]||'—' : '—'}</td></tr>`).join('') + '</tbody></table>';
+}
+
+window.addStudent = async function() {
+  const name = document.getElementById('s-name').value.trim();
+  const roll = document.getElementById('s-roll').value.trim();
+  const classId = document.getElementById('s-class').value;
+  if(!name||!classId) return alert('Naam aur class zaroori hai!');
+  await addDoc(collection(db, 'students'), { name, rollNumber: roll, classId });
+  document.getElementById('s-name').value = ''; document.getElementById('s-roll').value = '';
+  loadStudents(); alert('✓ Student add ho gaya!');
+}
+
+async function loadStudents() {
+  const filterClass = document.getElementById('filter-class-students')?.value;
+  let snap;
+  if(filterClass) { const q = query(collection(db, 'students'), where('classId', '==', filterClass)); snap = await getDocs(q); }
+  else snap = await getDocs(collection(db, 'students'));
+  const classes = {};
+  const cs = await getDocs(collection(db, 'classes'));
+  cs.docs.forEach(d => classes[d.id] = d.data().name + ' ' + (d.data().section||''));
+  const el = document.getElementById('students-list');
+  if(snap.empty) { el.innerHTML = '<p style="color:#888;font-size:13px">Koi student nahi.</p>'; return; }
+  el.innerHTML = '<table><thead><tr><th>Naam</th><th>Roll No.</th><th>Class</th></tr></thead><tbody>' +
+    snap.docs.map(d => `<tr><td>${d.data().name}</td><td>${d.data().rollNumber||'—'}</td><td>${classes[d.data().classId]||'—'}</td></tr>`).join('') + '</tbody></table>';
+}
+
+async function populateClassDropdowns() {
+  const snap = await getDocs(collection(db, 'classes'));
+  ['t-class','s-class','filter-class-students','admin-result-class'].forEach(id => {
+    const el = document.getElementById(id); if(!el) return;
+    const first = el.options[0].text;
+    el.innerHTML = `<option value="">${first}</option>` + snap.docs.map(d => `<option value="${d.id}">${d.data().name} ${d.data().section||''}</option>`).join('');
+  });
+}
+
+window.loadClassResults = async function() {
+  const classId = document.getElementById('admin-result-class').value; if(!classId) return;
+  const q = query(collection(db, 'students'), where('classId', '==', classId));
+  const snap = await getDocs(q);
+  const el = document.getElementById('class-results-list');
+  if(snap.empty) { el.innerHTML = '<p style="color:#888;font-size:13px">Koi student nahi.</p>'; return; }
+  el.innerHTML = '<table><thead><tr><th>Naam</th><th>Roll</th><th>Result</th></tr></thead><tbody>' +
+    snap.docs.map(d => `<tr><td>${d.data().name}</td><td>${d.data().rollNumber||'—'}</td><td><button class="btn btn-sm" style="background:#1e3a5f;color:white;border:none;cursor:pointer" onclick="viewResult('${d.id}','${d.data().name}','admin-page')">Result Dekho</button></td></tr>`).join('') + '</tbody></table>';
+}
+
+// ===================== TEACHER =====================
+async function loadTeacherData() {
+  const q = query(collection(db, 'students'), where('classId', '==', currentTeacherClass));
+  const snap = await getDocs(q);
+  const sel = document.getElementById('teacher-student');
+  sel.innerHTML = '<option value="">Student chunein</option>' + snap.docs.map(d => `<option value="${d.id}">${d.data().name} (Roll: ${d.data().rollNumber||'—'})</option>`).join('');
+}
+
+window.loadStudentSubjects = async function() {
+  const studentId = document.getElementById('teacher-student').value;
+  if(!studentId) { document.getElementById('marks-entry-area').innerHTML = ''; document.getElementById('save-marks-btn').style.display='none'; return; }
+  const q = query(collection(db, 'subjects'), where('classId', '==', currentTeacherClass));
+  const snap = await getDocs(q);
+  if(snap.empty) { document.getElementById('marks-entry-area').innerHTML = '<p style="color:#c0392b">Subjects set nahi hain. Admin se contact karein.</p>'; return; }
+
+  // FIX 1: Har student ke existing marks load karo
+  const examType = document.getElementById('exam-type').value;
+  const existingMarks = {};
+  for(const subDoc of snap.docs) {
+    const markDocId = `${studentId}_${subDoc.id}_${examType}`;
+    const markSnap = await getDoc(doc(db, 'marks', markDocId));
+    if(markSnap.exists()) existingMarks[subDoc.id] = markSnap.data().marksObtained;
+  }
+
+  document.getElementById('marks-entry-area').innerHTML = '<div class="marks-grid">' +
+    snap.docs.map(d => `<div class="subject-mark"><label>${d.data().name}<br><small style="color:#888">Max: ${d.data().maxMarks}</small></label><input type="number" id="mark-${d.id}" min="0" max="${d.data().maxMarks}" value="${existingMarks[d.id]!==undefined ? existingMarks[d.id] : ''}" placeholder="Marks" /></div>`).join('') + '</div>';
+  document.getElementById('save-marks-btn').style.display = 'block';
+}
+
+window.saveMarks = async function() {
+  const studentId = document.getElementById('teacher-student').value;
+  const examType = document.getElementById('exam-type').value;
+  const inputs = document.querySelectorAll('[id^="mark-"]');
+  const msg = document.getElementById('marks-msg');
+  msg.textContent = 'Save ho raha hai...'; msg.style.color = '#555';
+  for(const inp of inputs) {
+    if(inp.value === '') continue;
+    const subjectId = inp.id.replace('mark-','');
+    const num = parseInt(inp.value);
+    // FIX 1: studentId + subjectId + examType milake unique ID banate hain
+    const docId = `${studentId}_${subjectId}_${examType}`;
+    await setDoc(doc(db, 'marks', docId), {
+      studentId,
+      subjectId,
+      marksObtained: num,
+      examType,
+      updatedAt: new Date()
+    });
+  }
+  msg.textContent = '✓ Marks successfully save ho gaye!'; msg.style.color = 'green';
+}
+
+async function loadTeacherResults() {
+  const q = query(collection(db, 'students'), where('classId', '==', currentTeacherClass));
+  const snap = await getDocs(q);
+  const el = document.getElementById('teacher-results-list');
+  if(snap.empty) { el.innerHTML = '<p style="color:#888">Koi student nahi.</p>'; return; }
+  el.innerHTML = '<table><thead><tr><th>Naam</th><th>Roll</th><th>Result</th></tr></thead><tbody>' +
+    snap.docs.map(d => `<tr><td>${d.data().name}</td><td>${d.data().rollNumber||'—'}</td><td><button class="btn btn-sm" style="background:#1e3a5f;color:white;border:none;cursor:pointer" onclick="viewResult('${d.id}','${d.data().name}','teacher-page')">Dekho</button></td></tr>`).join('') + '</tbody></table>';
+}
+
+// ===================== RESULT VIEW =====================
+window.viewResult = async function(studentId, studentName, back) {
+  backPage = back; showPage('result-page');
+  document.getElementById('res-name').textContent = studentName;
+  document.getElementById('res-avatar').textContent = studentName.charAt(0).toUpperCase();
+  document.getElementById('res-bars').innerHTML = '<p style="color:#888">Marks load ho rahe hain...</p>';
+
+  // FIX 1: Sirf us student ke marks fetch karo
+  const q = query(collection(db, 'marks'), where('studentId', '==', studentId));
+  const marksSnap = await getDocs(q);
+
+  if(marksSnap.empty) {
+    document.getElementById('res-bars').innerHTML = '<p style="color:#888">Is student ke marks abhi enter nahi hue hain.</p>';
+    document.getElementById('res-total').textContent = '—';
+    document.getElementById('res-percent').textContent = '—';
+    document.getElementById('res-grade').textContent = '—';
+    document.getElementById('res-ai').innerHTML = '<p style="color:#888">Pehle marks enter karein.</p>';
+    return;
+  }
+
+  const marksData = [];
+  for(const m of marksSnap.docs) {
+    const subDoc = await getDoc(doc(db, 'subjects', m.data().subjectId));
+    if(subDoc.exists()) {
+      marksData.push({
+        name: subDoc.data().name,
+        maxMarks: subDoc.data().maxMarks,
+        obtained: m.data().marksObtained
+      });
+    }
+  }
+
+  if(marksData.length === 0) {
+    document.getElementById('res-bars').innerHTML = '<p style="color:#888">Marks load nahi hue.</p>';
+    return;
+  }
+
+  const total = marksData.reduce((s,m) => s+m.obtained, 0);
+  const maxTotal = marksData.reduce((s,m) => s+m.maxMarks, 0);
+  const pct = Math.round((total/maxTotal)*100);
+
+  // FIX 3: Sahi grade system
+  const gradeInfo = getGrade(pct);
+
+  document.getElementById('res-total').textContent = total+'/'+maxTotal;
+  document.getElementById('res-percent').textContent = pct+'%';
+  document.getElementById('res-grade').textContent = gradeInfo.grade;
+  document.getElementById('res-grade').style.color = gradeInfo.color;
+
+  // Grade table bhi dikhao
+  const gradeTable = `
+    <div style="margin-top:12px;padding:10px;background:#f8f9fc;border-radius:8px;font-size:12px;color:#555">
+      <b>Grade System:</b> A+(90%+) | A(80-89%) | B+(70-79%) | B(60-69%) | C+(50-59%) | C(40-49%) | D(33-39%) | F(33% se kam)
+    </div>`;
+
+  document.getElementById('res-bars').innerHTML = marksData.map(m => {
+    const p = Math.round((m.obtained/m.maxMarks)*100);
+    const gi = getGrade(p);
+    return `<div class="bar-row">
+      <span class="bar-label">${m.name}</span>
+      <div class="bar-bg"><div class="bar-fill" style="width:${p}%;background:${gi.color}"></div></div>
+      <span class="bar-score" style="color:${gi.color}">${m.obtained}</span>
+      <span class="grade-box" style="background:${gi.bg};color:${gi.color};font-size:11px;padding:2px 6px;border-radius:4px">${gi.grade}</span>
+    </div>`;
+  }).join('') + gradeTable;
+
+  if(chartInstance) chartInstance.destroy();
+  chartInstance = new Chart(document.getElementById('res-chart'), {
+    type: 'bar',
+    data: {
+      labels: marksData.map(m=>m.name),
+      datasets: [{
+        label: 'Marks',
+        data: marksData.map(m=>m.obtained),
+        backgroundColor: marksData.map(m=>{ const gi=getGrade(Math.round((m.obtained/m.maxMarks)*100)); return gi.color+'99'; }),
+        borderColor: marksData.map(m=>{ const gi=getGrade(Math.round((m.obtained/m.maxMarks)*100)); return gi.color; }),
+        borderWidth: 1,
+        borderRadius: 6
+      }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { min: 0, max: 100 } } }
+  });
+
+  generateAI(studentName, marksData, pct, gradeInfo.grade);
+}
+
+// FIX 4: Gemini ko ab seedha browser se nahi, apne Vercel server function ke through call karte hain.
+// Isse API key kabhi browser/GitHub me expose nahi hogi.
+async function generateAI(name, marks, pct, grade) {
+  const aiEl = document.getElementById('res-ai');
+  aiEl.innerHTML = '<div style="color:#555;font-size:13px">AI suggestions taiyar ho rahi hain...</div>';
+  const prompt = `Tu ek friendly Indian school teacher hai. Student "${name}" ke yeh marks hain:\n${marks.map(m=>`${m.name}: ${m.obtained}/${m.maxMarks} (${Math.round((m.obtained/m.maxMarks)*100)}%)`).join('\n')}\nKul percentage: ${pct}%, Grade: ${grade}\n\nSimple Hindi mein 4-5 suggestions do:\n1. Weak subjects ke liye specific tips\n2. Strong subjects ke liye encouragement\n3. Overall ek motivational line\nShort aur helpful rakho.`;
+
+  try {
+    const res = await fetch('/api/generate-suggestions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt })
+    });
+    const data = await res.json();
+    const text = data.text || '';
+    if(text) {
+      aiEl.innerHTML = text.split('\n').filter(l=>l.trim()).map(l =>
+        `<div class="suggestion-item"><div class="sug-dot"></div><div class="sug-text">${l.replace(/^\*+\s*|\d+\.\s*/g,'')}</div></div>`
+      ).join('');
+    } else {
+      aiEl.innerHTML = '<div class="sug-text" style="color:#888">AI response nahi aaya. ' + (data.error || 'Server check karein.') + '</div>';
+    }
+  } catch(e) {
+    aiEl.innerHTML = '<div class="sug-text" style="color:#888">AI suggestion abhi available nahi. Internet check karein.</div>';
+  }
+}
+</script>
+</body>
+</html>
